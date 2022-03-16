@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SAM Template for Headless Chrome Selenium testing
+
+
+Parameters:
+  FunctionName:
+    Type: String
+    Description: Name of your Lambda function
+
+  ErrorEmail:
+    Type: String
+    Description: Email address for function failure notification
+
+
+Globals:
+  Function:
+    Runtime: python3.6  # headless chrome with chromedriver won't work with any newer version of Python!
+    Timeout: 180
+    MemorySize: 2048  # well don't be surprised it's Chrome after all...
+
+
+Resources:
+  SeleniumFunctionErrorTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${FunctionName}-error-topic'
+      Subscription:
+        - Endpoint: !Ref ErrorEmail
+          Protocol: email
+
+  SeleniumFunctionPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: LogInCloudWatch
+            Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: '*'
+          - Sid: PublishToSNS
+            Effect: Allow
+            Action:
+              - SNS:Publish
+            Resource:
+              - !Ref SeleniumFunctionErrorTopic
+
+  SeleniumFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+                - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - !Ref SeleniumFunctionPolicy
+
+  ChromeDriverLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: layers/chromedriver
+      Description: Lambda Layer containing the Chromedriver and headless Chrome
+
+  SeleniumFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: lambda/
+      Handler: run_your_selenium_code.handler
+      FunctionName: !Ref FunctionName
+      Role: !GetAtt SeleniumFunctionRole.Arn
+      Layers:
+        - !Ref ChromeDriverLayer
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Destination: !Ref SeleniumFunctionErrorTopic
+            Type: SNS
+        MaximumRetryAttempts: 2  # 2 is the max it can be set to
+      Events:
+        ExampleCronScheduleTrigger:
+          Type: Schedule
+          Properties:
+            Description: Triggers function every 10 minutes
+            Enabled: true
+            Name: trigger-every-ten-minutes-event
+            Schedule: 'cron(*/10 * ? * * *)'
+            Input: '{"URI": "https://github.com"}'
