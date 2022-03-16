@@ -5,7 +5,7 @@ It uses [Headless Chrome](https://github.com/adieuadieu/serverless-chrome)
 and [AWS SAM](https://aws.amazon.com/serverless/sam/).
 
 # Why
-##SAM
+## SAM
 While other projects exist that cover a similar topic, those use npm, 
 and the [Serverless Framework](https://www.serverless.com/).
 
@@ -26,18 +26,18 @@ Python3.6 and AWS SAM you have to install yourself.
 (you have to install Python 3.6 locally as well to be able to build the Lambda function;
 I will create a dockerfile for this later)
 
-#Enough talk, get to action!
-##1. Prerequisites
+# Enough talk, get to action!
+## 1. Prerequisites
 - [AWS SAM](https://aws.amazon.com/serverless/sam/#Install_SAM_CLI)
 - [Python 3.6](https://www.python.org/downloads/release/python-3615/)
 
-##2. Get chromedriver and headless chrome binaries
+## 2. Get chromedriver and headless chrome binaries
 Run [layers/chromedriver/download_binaries.sh](layers/chromedriver/download_binaries.sh)
 
-##3. Build the Lambda function
+## 3. Build the Lambda function
 [`./build.sh`](build.sh)
 
-##4. Deploy to AWS
+## 4. Deploy to AWS
 Make sure you have your AWS Profile set, then run:  
 [`deploy.sh your-stack-name your-function-name your-email-for-error-notification [s3-bucket [s3-prefix]]`](deploy.sh)
 
